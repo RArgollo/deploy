@@ -45,6 +45,7 @@ jobs:
         key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
         username: ${{ secrets.EC2_REMOTE_USER }}
         script: |
+          sudo su -
           cd deploy/
           npm i
           npx pm2 start index.js
