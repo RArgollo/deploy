@@ -46,6 +46,6 @@ jobs:
         username: ${{ secrets.EC2_REMOTE_USER }}
         script: |
           cd nodejs/
-          npm i -force
+          npm i
           npx pm2 start index.js
           npx pm2 restart all
