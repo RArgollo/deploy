@@ -1,0 +1,51 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: ['21.7.2']
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v4
+      name: Use Node.js ${{ matrix.node-version }}
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - uses: easingthemes/ssh-deploy@main
+      name: "Deploy to EC2"
+      with:
+        SSH_PRIVATE_KEY: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
+        REMOTE_HOST: ${{ secrets.AWS_EC2_REMOTE_HOST }}
+        REMOTE_USER: ${{ secrets.EC2_REMOTE_USER }}
+        TARGET: "/home/${{ secrets.EC2_REMOTE_USER }}/nodejs"
+        ARGS: "-rlgoDzvc -i --delete"
+        EXCLUDE: "/dist/, /node_modules/"
+        
+    - name: Execute remote ssh commands
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.AWS_EC2_REMOTE_HOST }}
+        key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
+        username: ${{ secrets.EC2_REMOTE_USER }}
+        script: |
+          cd deploy/
+          npm i
+          npx pm2 start index.js
+          npx pm2 restart all
